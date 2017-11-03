@@ -6,6 +6,14 @@
 {{ super() }}
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type='image/x-icon'>
+{% block scripts %}
+{{ super() }}
+{{ moment.include_moment() }}
+<!--
+the way how to use local moment.js 
+{{ moment.include_moment(local_js=url_for('static', filename='moment-with-locales.min.js')) }} 
+-->
+{% endblock %}
 {% endblock %}
 
 {% block navbar %}
