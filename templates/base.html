@@ -9,10 +9,7 @@
 {% block scripts %}
 {{ super() }}
 {{ moment.include_moment() }}
-<!--
-the way how to use local moment.js 
-{{ moment.include_moment(local_js=url_for('static', filename='moment-with-locales.min.js')) }} 
--->
+{{ moment.lang('zh-cn') }}
 {% endblock %}
 {% endblock %}
 
@@ -40,6 +37,12 @@ the way how to use local moment.js
 
 {% block content %}
 <div class="container">
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning">
+        <button type="botton" class="close" data-dismiss="alert">&times;</button>
+        {{ message }}
+    </div>
+    {% endfor %}
     {% block page_content %}{% endblock %}
 </div>
 {% endblock %}
