@@ -5,16 +5,31 @@ from flask_script import Manager
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from wtforms.validators import Required
+
 from datetime import datetime
 
 app = Flask(__name__)
 manager = Manager(app)
 bootstrap = Bootstrap(app)
 moment = Moment(app)
+# 默认情况下，flask-wtf会保护表单免受跨站请求伪造攻击，需要为程序设置密钥
+app.config['SECRET_KEY'] = 'HELLOSTRANGER'
 
-@app.route('/')
+class NameForm(FlaskForm):
+    name = StringField('What is your name?', validators=[Required()])
+    submit = SubmitField('Submit')
+
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('index.html', current_time=datetime.utcnow())
+    name = None
+    form = NameForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        form.name.data = ''
+    return render_template('index.html', form=form, name=name, current_time=datetime.utcnow())
 
 @app.route('/user/<name>')
 def user(name):
