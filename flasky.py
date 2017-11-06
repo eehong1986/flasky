@@ -10,6 +10,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import Required
 
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate, MigrateCommand
 
 from datetime import datetime
 import os
@@ -28,6 +29,8 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+manager.add_command('db', MigrateCommand)
 
 # 建立数据库使用的模型
 class Role(db.Model):
