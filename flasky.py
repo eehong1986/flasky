@@ -5,15 +5,23 @@ from flask_script import Manager
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 
+# Flask 表单插件
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import Required
 
+# Flask 数据库ORM 插件
 from flask_sqlalchemy import SQLAlchemy
+# Flask 数据库迁移工具
 from flask_migrate import Migrate, MigrateCommand
 
+# Flask邮件支持
+from flask_mail import Mail, Message
+
+# 标准库
 from datetime import datetime
 import os
+#import smtplib
 
 app = Flask(__name__)
 manager = Manager(app)
@@ -23,6 +31,25 @@ moment = Moment(app)
 # 默认情况下，flask-wtf会保护表单免受跨站请求伪造攻击，需要为程序设置密钥
 app.config['SECRET_KEY'] = 'HELLOSTRANGER'
 
+# 配置smtp 服务器信息
+app.config['MAIL_DEBUG'] = True
+app.config['MAIL_SERVER'] = 'smtp.qq.com'       # smtp 服务器
+app.config['MAIL_PORT'] = 465                   # smtp 服务器端口
+app.config['MAIL_USE_SSL'] = True               # qq邮箱使用ssl
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME') # 账号
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD') # 密码
+
+# 在实例化 Mail() 前必须配置smtp 服务器信息,
+# 否则发送邮件建立socket时对象不知道服务器信息无法建立socket连接，返回10061错误
+mail = Mail(app)
+
+# 配置邮件header
+app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
+app.config['FLASKY_MAIL_SENDER'] = 'Flasky Admin <346271437@qq.com>'
+app.config['FLASKY_ADMIN'] = os.environ.get('FLASKY_ADMIN')
+
+# Flask 数据库配置
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
@@ -63,6 +90,15 @@ class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[Required()])
     submit = SubmitField('Submit')
 
+# 发送邮件
+def send_mail(to, subject, template, **kwargs):
+    msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject, 
+            sender=app.config['FLASKY_MAIL_SENDER'], recipients=[to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    msg.html = render_template(template + '.html', **kwargs)
+    mail.send(msg)
+
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = NameForm()
@@ -70,10 +106,13 @@ def index():
         user = User.query.filter_by(username=form.name.data).first()
         if user is None:
             # 新用户，加入到数据库中
-            user_role = Role(name='User')
-            user = User(username=form.name.data, role=user_role)
+            role_user = Role.query.filter_by(name='User').first()
+            user = User(username=form.name.data, role_id=role_user.id)
             db.session.add(user)
+            db.session.commit()
             session['known'] = False
+            if app.config['FLASKY_ADMIN']:
+                send_mail(app.config['FLASKY_ADMIN'], 'New User', 'mail/new_user', user=user)
         else:
             session['known'] = True
         session['name'] = form.name.data
