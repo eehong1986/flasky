@@ -1,7 +1,7 @@
 #-*- coding:utf-8 -*-
 
 from flask import Flask, render_template, session, redirect, url_for, flash
-from flask_script import Manager
+from flask_script import Manager, Shell
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 
@@ -17,11 +17,11 @@ from flask_migrate import Migrate, MigrateCommand
 
 # Flask邮件支持
 from flask_mail import Mail, Message
+from threading import Thread
 
 # 标准库
 from datetime import datetime
 import os
-#import smtplib
 
 app = Flask(__name__)
 manager = Manager(app)
@@ -59,6 +59,11 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 manager.add_command('db', MigrateCommand)
 
+# 使用Flask-script的shell命令自动导入特定的对象
+def make_shell_context():
+    return dict(app=app, db=db, User=User, Role=Role)
+manager.add_command('shell', Shell(make_context=make_shell_context))
+
 # 建立数据库使用的模型
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -85,19 +90,23 @@ class User(db.Model):
     def __repr__(self):
         return '<User %r>' % self.username
 
-
 class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[Required()])
     submit = SubmitField('Submit')
 
+# 异步发送电子邮件
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
 # 发送邮件
-def send_mail(to, subject, template, **kwargs):
+def send_email(to, subject, template, **kwargs):
     msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject, 
             sender=app.config['FLASKY_MAIL_SENDER'], recipients=[to])
     msg.body = render_template(template + '.txt', **kwargs)
     msg.html = render_template(template + '.html', **kwargs)
-    mail.send(msg)
-
+    thr = Thread(target=send_async_email, args=[app, msg])
+    thr.start()
+    return thr
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -112,7 +121,7 @@ def index():
             db.session.commit()
             session['known'] = False
             if app.config['FLASKY_ADMIN']:
-                send_mail(app.config['FLASKY_ADMIN'], 'New User', 'mail/new_user', user=user)
+                send_email(app.config['FLASKY_ADMIN'], 'New User', 'mail/new_user', user=user)
         else:
             session['known'] = True
         session['name'] = form.name.data
