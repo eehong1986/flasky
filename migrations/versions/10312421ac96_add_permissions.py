@@ -1,8 +1,8 @@
 """add permissions
 
-Revision ID: c69ae62cadc2
+Revision ID: 10312421ac96
 Revises: f83d4f489b27
-Create Date: 2017-11-21 22:02:54.397000
+Create Date: 2017-11-22 20:29:27.918000
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'c69ae62cadc2'
+revision = '10312421ac96'
 down_revision = 'f83d4f489b27'
 branch_labels = None
 depends_on = None
