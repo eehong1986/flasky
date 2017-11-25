@@ -1,5 +1,6 @@
 #-*- coding:utf-8 -*-
 
+from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app
@@ -64,6 +65,16 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     # user comfirmed by email or not
     confirmed = db.Column(db.Boolean, default=False)
+    # 用户姓名
+    name = db.Column(db.String(64))
+    # 用户居住地
+    location = db.Column(db.String(64))
+    # 简介
+    about_me = db.Column(db.Text())
+    # 注册时间
+    member_since = db.Column(db.DateTime(), default=datetime.utcnow)
+    # 最后一次访问时间
+    last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     # 此处添加的role_id被定义为外键，就是这个外键建立起了到Role的联系
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
@@ -85,6 +96,11 @@ class User(UserMixin, db.Model):
 
     def is_administrator(self):
         return self.can(Permission.ADMINISTER)
+
+    # 用户访问页面时更新last_seen
+    def ping(self):
+        self.last_seen = datetime.utcnow()
+        db.session.add(self)
 
     @property
     def password(self):
