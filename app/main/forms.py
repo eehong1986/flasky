@@ -2,6 +2,7 @@
 
 # Flask 表单插件
 from flask_wtf import FlaskForm
+from flask_pagedown.fields import PageDownField
 from wtforms import StringField, SubmitField, TextField, SelectField
 from wtforms import BooleanField, TextAreaField
 from wtforms.validators import Required, Length, Email, Regexp
@@ -50,6 +51,7 @@ class EditProfileAdminForm(FlaskForm):
             raise ValidationError('Username already in use.')
 
 class PostForm(FlaskForm):
-    body = TextAreaField("What's on your mind?", validators=[Required()])
+    # 使用PageDownField 替代 TextAreaField
+    body = PageDownField("What's on your mind?", validators=[Required()])
     submit = SubmitField('Submit')
 
