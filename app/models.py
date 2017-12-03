@@ -141,6 +141,8 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(permissions=0xff).first()
             else:
                 self.role = Role.query.filter_by(default=True).first()
+        # 创建新用户时自动关注自己
+        self.follow(self)
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -220,6 +222,11 @@ class User(UserMixin, db.Model):
         self.email = new_email
         db.session.add(self)
         return True
+
+    @property
+    def followed_posts(self):
+        return Post.query.join(Follow, Follow.followed_id == Post.author_id)\
+                .filter(Follow.follower_id == self.id)
     
     def follow(self, user):
         if not self.is_following(user):
@@ -238,6 +245,15 @@ class User(UserMixin, db.Model):
     def if_followed_by(self, user):
         return self.followers.filter_by(
                 follower_id=user.id).first() is not None
+
+    # 为数据库中已有用户添加自关注信息
+    @staticmethod
+    def add_self_follows():
+        for user in User.query.all():
+            if not user.is_following(user):
+                user.follow(user)
+                db.session.add(user)
+                db.session.commit()
 
     @staticmethod
     def generate_fake(count=100):
