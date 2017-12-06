@@ -6,10 +6,11 @@ from flask import flash, request, make_response
 from flask_login import login_required, current_user
 
 from . import main
-from .forms import NameForm, EditProfileForm, EditProfileAdminForm, PostForm
+from .forms import NameForm, EditProfileForm, EditProfileAdminForm
+from .forms import PostForm, CommentForm
 from ..email import send_email
 from .. import db
-from ..models import Permission, User, Role, Post
+from ..models import Permission, User, Role, Post, Comment
 from ..decorators import admin_required, permission_required
 
 @main.route('/', methods=['GET', 'POST'])
@@ -91,10 +92,28 @@ def edit_profile_admin(id):
     return render_template('edit_profile.html', form=form, user=user)
 
 
-@main.route('/post/<int:id>')
+@main.route('/post/<int:id>', methods=['GET', 'POST'])
 def post(id):
     post = Post.query.get_or_404(id)
-    return render_template('post.html', posts=[post])
+    form = CommentForm()
+    if form.validate_on_submit():
+        comment = Comment(body=form.body.data,
+                        disabled=False,
+                        author=current_user._get_current_object(),
+                        post=post)
+        db.session.add(comment)
+        flash('Your comment has been published.')
+        return redirect(url_for('.post', id=post.id, page=-1))
+    page = request.args.get('page', 1, type=int)
+    if page == -1:
+        page = (post.comments.count() - 1) / \
+                current_app.config['FLASKY_COMMENTS_PER_PAGE'] + 1
+    pagination = post.comments.order_by(Comment.timestamp.desc()).paginate(
+                page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+                error_out=False)
+    comments = pagination.items
+    return render_template('post.html', posts=[post], form=form,
+                        comments=comments, pagination=pagination)
 
 @main.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -197,4 +216,5 @@ def show_followed():
     resp = make_response(redirect(url_for('.index')))
     resp.set_cookie('show_followed', '1', max_age=7*24*60*60)
     return resp
+
 

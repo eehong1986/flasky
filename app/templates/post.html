@@ -1,8 +1,29 @@
 {% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
 
 {% block title %}Flasky - Post{% endblock %}
 
 {% block page_content %}
 {{ super() }}
+<!-- 显示文章正文 -->
 {% include "_posts.html" %}
+
+<div>
+    <h4 id="comments">Comments</h4>
+    <!-- 显示评论输入表格 -->
+    {% if current_user.can(Permission.COMMENT) %}
+        <div class="comment-form">
+        {{ wtf.quick_form(form) }} 
+        </div>
+    {% endif %}
+
+    <!-- 显示评论内容  -->
+    {% include "_comments.html" %}
+    {% if pagination %}
+    <div class="pagination">
+        {{ macros.pagination_widget(pagination, '.post', fragment='#comments', id=posts[0].id) }}
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

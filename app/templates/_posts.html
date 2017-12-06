@@ -28,6 +28,12 @@
                 <a href="{{ url_for('main.post', id=post.id) }}">
                     <span class="label label-default">Permalink</span>
                 </a>
+                <!-- post下方显示评论数量 -->
+                <a href="{{ url_for('main.post', id=post.id) }}#comments">
+                    <span class="label label-primary">
+                        {{ post.comments.count() }} Comments
+                    </span>
+                </a>
             </div>
         <!--/div-->
     </li>
