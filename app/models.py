@@ -84,7 +84,8 @@ class Post(db.Model):
     def from_json(json_post):
         body = json_post.get('body')
         if body is None or body == '':
-            return ValidationError('post does not have a body')
+            # 此处应使用 raise 抛出错误，而不能使用 return
+            raise ValidationError('post does not have a body')
         return Post(body=body)
     
     @staticmethod
@@ -338,7 +339,7 @@ class User(UserMixin, db.Model):
         return self.followed.filter_by(
                 followed_id=user.id).first() is not None
 
-    def if_followed_by(self, user):
+    def is_followed_by(self, user):
         return self.followers.filter_by(
                 follower_id=user.id).first() is not None
 
